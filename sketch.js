@@ -1,46 +1,5 @@
-class Particle{
-  constructor(x, y, dx, dy, speed, color, size, life, child){
-    this.child = child
-    this.visible = true
-    this.pos = createVector(x,y)
-    this.dir = p5.Vector.normalize(createVector(dx-x,dy-y))
-    this.dir.mult(speed)
-    this.color = color
-    this.dirSlow = p5.Vector.normalize(createVector(dx-x,dy-y))
-    this.dir.mult(speed/5)
-    this.size = size;
-    this.life = life;
-    
-    this.maxLife = life
-  }
-  isAlive(){
-    return this.life >= 0
-  }
-  draw(){
-    if(this.visible){
-      const alpha = this.child? map(this.maxLife, 
-                                    40,0,
-                                    255,0) : 255;
-    
-      // fill(this.color.x, this.color.y, this.color.z, alpha);
-      // circle(this.pos.x,this.pos.y, this.size);
-      textSize(this.size);
-      text(this.color,this.pos.x,this.pos.y);
-     
-    }
-  }
-  update(){
-    if(this.isAlive()){
-      const gravity = createVector(0,0.4)
-      this.dirSlow.add(gravity)
-      this.dir.lerp(this.dirSlow, 0.05)
-      this.pos.add(this.dir)
-      this.life--;
-    } else {
-      this.visible = false
-    }
-  }
-}
+p5.disableFriendlyErrors = true; // disables FES
+
 class FireWorkBullet{
   constructor(x, y, speed, dx,dy, child){
     const hearts = ['💙', '❤️', 
@@ -49,9 +8,12 @@ class FireWorkBullet{
                     '🧡', '💛'];
     const randomHeart = Math.floor(Math.random()*hearts.length)
     this.color = hearts[randomHeart];
-    this.particle = new Particle(x,y,
-                                 dx,dy,speed, 
-                                 this.color, 25,40,child)
+    this.particle = new Particle(
+      x, y,
+      dx,dy,speed, 
+      this.color,
+      sizeParticleBig, 40, child
+    )
    
     this.children = []
     this.child = child
@@ -61,16 +23,13 @@ class FireWorkBullet{
   }
   isAlive(){
     let alive = this.particle.isAlive()
-    print(this.children.length)
     if(!this.child && this.children.length > 0){
       const hasChildrenAlive = this.children
-        .map((elem) => elem.isAlive())
-        .filter((value) => value == true)
+        .filter((value) => value.isAlive() == true)
         .length > 0
-      // print(`${alive}, ${hasChildrenAlive}`)
       return alive || hasChildrenAlive
     }
-    return alive
+    return true
   }
   update(){
     if(this.exploded){
@@ -80,26 +39,30 @@ class FireWorkBullet{
         this.exploded = true
         if(!this.child){
 
-          const inc = 2*Math.PI / 10
+          const inc = 2*Math.PI / 12
           for(let i = 0; i< 2*Math.PI; i += inc){
             let dir = p5.Vector.fromAngle(i, 0.01); 
             dir.add(this.pos)
+
+            const posX = this.particle.pos.x
+            const posY = this.particle.pos.y
+            const dirX = this.particle.pos.x + dir.x
+            const dirY = this.particle.pos.y + dir.y
             this.children.push(
-              this.particle = new Particle(
-                this.particle.pos.x,
-                this.particle.pos.y,
-                this.particle.pos.x + dir.x,
-                this.particle.pos.y + dir.y,
-                4,
+              new Particle(
+                posX,
+                posY,
+                dirX,
+                dirY,
+                6,
                 this.color,
-                10,
-                40,
+                sizeParticleSmall,
+                60,
                 true
               ))
             
-              }
-          
-          
+              
+          }
         }
         
       }
@@ -121,17 +84,13 @@ class FireWorkGun {
   update(){  
     for(let i = this.bullets.length - 1; i>=0;i-- ){
       const bullet = this.bullets[i]
-       bullet.update()
-        bullet.draw()
-      
-      // if(!bullet.isAlive()){
-      //   this.bullets.splice(i)
-      // } 
-      
+      bullet.update()
+      bullet.draw()
+      if(!bullet.isAlive()){
+        this.bullets.splice(i,1)
+      } 
     }
-    for(let bullet of this.bullets){
-      
-    }
+
   }
   draw(){
     fill(255);
@@ -144,19 +103,27 @@ class FireWorkGun {
   }
 }
 let gun;
+let sizeParticleBig;
+let sizeParticleSmall;
 function mouseClicked() {
-  gun.shoot(mouseX, mouseY, 10)
+  let mouse = createVector(mouseX, mouseY)
+  let dist = p5.Vector.dist(mouse, createVector(mouseX, gun.pos.y));
+  gun.shoot(mouseX, mouseY, map(dist, 0, height, 10,15))
 }
 
 function setup() {
   pixelDensity(1)
   createCanvas(window.innerWidth, window.innerHeight);
   noStroke()
+  sizeParticleBig = width * 0.05
+  sizeParticleSmall = width * 0.02
   gun = new FireWorkGun(width/2,height-20)
 }
 
 function draw() {
-  background(0,40);
+  background(20,0,40,40);
   gun.update()
   gun.draw()
+  console.log(gun.bullets.length)
+  console.log(frameRate())
 }
