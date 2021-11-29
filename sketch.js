@@ -149,6 +149,7 @@ function mouseClicked() {
 }
 
 function setup() {
+  pixelDensity(1)
   createCanvas(window.innerWidth, window.innerHeight);
   noStroke()
   gun = new FireWorkGun(width/2,height-20)
